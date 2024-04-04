@@ -3,6 +3,8 @@ import numpy as np
 import networkx as nx
 import random
 
+# TODO : rho paramètre aléatoire 
+
 class Ant:
     def __init__(self, graph, pheromone_matrix, alpha, beta, capacity):
         self.graph = graph
