@@ -5,7 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from params import *
 
-def read_VRP_input_file(file_path):
+def read_VR_file(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
@@ -17,6 +17,82 @@ def read_VRP_input_file(file_path):
     customer_data = [list(map(int, line.strip().split(','))) for line in lines[num_customers:]]
 
     return num_customers, vehicle_capacity, depot_coordinates, customer_data
+
+def read_VRP_input_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    # Variables pour stocker les données
+    NODE_COORD_SECTION = []
+    DEMAND_SECTION = []
+    depot = None
+    vehicle_capacity = None
+    num_customers = 0
+
+    # Flags pour identifier les sections
+    reading_coords = False
+    reading_demand = False
+
+    for line in lines:
+        line = line.strip()
+
+        # Ignorer les lignes vides et les commentaires
+        if not line or line.startswith("NAME") or line.startswith("COMMENT") or line.startswith("TYPE") or line.startswith("DIMENSION") or line.startswith("EDGE_WEIGHT_TYPE"):
+            continue
+
+        # Lire CAPACITY
+        if line.startswith("CAPACITY"):
+            vehicle_capacity = int(line.split(":")[1].strip())
+            continue
+
+        # Identifier les sections
+        if line == "NODE_COORD_SECTION":
+            reading_coords = True
+            reading_demand = False
+            continue
+        elif line == "DEMAND_SECTION":
+            reading_coords = False
+            reading_demand = True
+            continue
+        elif line == "DEPOT_SECTION":
+            break  # Fin des sections pertinentes
+
+        # Lire les coordonnées des nœuds
+        if reading_coords:
+            parts = line.split()
+            if len(parts) >= 3:
+                customer_id = int(parts[0])
+                x_coord = float(parts[1])
+                y_coord = float(parts[2])
+                NODE_COORD_SECTION.append((customer_id, (x_coord, y_coord)))
+                num_customers += 1
+            continue
+
+        # Lire les demandes des clients
+        if reading_demand:
+            parts = line.split()
+            if len(parts) >= 2:
+                customer_id = int(parts[0])
+                demand = int(parts[1])
+                DEMAND_SECTION.append((customer_id, demand))
+            continue
+
+    # Assigner la demande à chaque client
+    # Assumer que le client 1 est le dépôt avec demande 0
+    customer_data = []
+    for coord in NODE_COORD_SECTION:
+        cid, pos = coord
+        demand = 0  # Par défaut
+        for dem in DEMAND_SECTION:
+            if dem[0] == cid:
+                demand = dem[1]
+                break
+        customer_data.append((cid, pos, demand))
+
+    # Identifier le dépôt (client avec demande 0)
+    depot = next((cust for cust in customer_data if cust[0] == 1), None)
+
+    return num_customers, vehicle_capacity, depot, customer_data
 
 class Graph:
     def __init__(self):
@@ -57,6 +133,63 @@ class Graph:
 
         plt.show()
 
+def create_graph(num_customers, depot, customer_data):
+    G = nx.Graph()
+
+    # Ajouter le dépôt
+    G.add_node('depot', pos=depot[1], demand=depot[2])
+
+    # Ajouter les clients
+    for cust in customer_data:
+        cid, pos, demand = cust
+        if cid != depot[0]:
+            G.add_node(f'customer_{cid}', pos=pos, demand=demand)
+
+    # Ajouter les arêtes avec les distances
+    nodes = ['depot'] + [f'customer_{cust[0]}' for cust in customer_data if cust[0] != depot[0]]
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            node_i = nodes[i]
+            node_j = nodes[j]
+            pos_i = G.nodes[node_i]['pos']
+            pos_j = G.nodes[node_j]['pos']
+            distance = np.linalg.norm(np.array(pos_i) - np.array(pos_j))
+            G.add_edge(node_i, node_j, weight=distance)
+
+    return G
+
+def plot_graph_with_solution(graph, solution):
+    pos = nx.get_node_attributes(graph, 'pos')
+
+    # Plot nodes without labels and edges
+    nx.draw(graph, pos, with_labels=False, node_size=150, node_color='lightblue', edgecolors='white', width =0.1)
+
+    colors = ['red', 'orange', 'green', 'blue', 'purple']
+
+    tour = []
+    index = 0
+    for id, node in enumerate(solution):
+        tour.append(node)
+        if id != 0 and node == 'depot':
+            # Highlight the solution edges
+            solution_edges = [(tour[i], tour[i + 1]) for i in range(len(tour) - 1)]
+            nx.draw(graph, pos, edgelist=solution_edges, edge_color=colors[index], width=2, with_labels=False, node_size=150, node_color='lightblue', edgecolors='black', linewidths=0.8)
+            index += 1
+            tour = [node]
+
+    # Add labels for customers without overlap
+    labels = {node: node.split('_')[1] if 'customer' in node else node for node in graph.nodes()}
+    pos_lower = {k: (x, y - 0.05) for k, (x, y) in pos.items()}
+    nx.draw_networkx_labels(graph, pos_lower, labels, font_size=8, font_color='black', verticalalignment="bottom")
+
+    # Add labels for demands
+    demand_labels = {node: f'({graph.nodes[node]["demand"]})' for node in graph.nodes() if node != 'depot'}
+    pos_higher = {k: (x, y - 0.15) for k, (x, y) in pos.items()}
+    nx.draw_networkx_labels(graph, pos_higher, demand_labels, font_size=6, font_color='blue', verticalalignment="bottom")
+
+    plt.title('Vehicle Routing Problem - Solution')
+    plt.show()
+    
 import random 
 import numpy as np 
 import copy 

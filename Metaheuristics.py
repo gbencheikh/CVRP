@@ -417,3 +417,152 @@ class Partical_Swarm_Optimization:
                 particle.position = np.argsort(new_position)  # Trier comme une permutation
         
         return self.display_routes(self.global_best_position), self.global_best_cost
+    
+class Ant:
+    def __init__(self, graph, pheromone_matrix, alpha, beta, capacity, rho, Q):
+        self.graph = graph
+        self.pheromone_matrix = pheromone_matrix
+        self.alpha = alpha
+        self.beta = beta
+        self.capacity = capacity
+        self.tour = []
+        self.rho = rho  # Taux d'évaporation
+        self.Q = Q  # Constante de dépôt de phéromones
+
+    def ant_tour(self, remaining_customers):
+        self.tour = ['depot']
+        current_capacity = 0
+
+        while remaining_customers:
+            current_node = self.tour[-1]
+            probabilities = self.calculate_probabilities(current_node, remaining_customers)
+            next_node = self.select_next_node(probabilities)
+
+            if next_node == 'depot':
+                self.tour.append('depot')
+                current_capacity = 0
+                continue
+
+            # Extraire le numéro du client
+            customer_number = int(next_node.split('_')[1])
+            demand = self.graph.nodes[next_node]['demand']
+
+            if current_capacity + demand <= self.capacity:
+                current_capacity += demand
+                self.tour.append(next_node)
+                remaining_customers.remove(customer_number)
+            else:
+                self.tour.append('depot')
+                current_capacity = 0
+
+        self.tour.append('depot')
+
+    def calculate_probabilities(self, current_node, remaining_customers):
+        pheromone_values = []
+        heuristic_values = []
+        index_customer = []
+
+        for customer in remaining_customers:
+            next_node = f'customer_{customer}'
+            if self.graph.has_edge(current_node, next_node):
+                pheromone = self.pheromone_matrix.get((current_node, next_node), 1.0)
+                distance = self.graph[current_node][next_node]['weight']
+                heuristic = 1 / distance if distance > 0 else 0
+
+                index_customer.append(customer)
+                pheromone_values.append(pheromone)
+                heuristic_values.append(heuristic)
+
+        # Calcul des valeurs totales pour normaliser les probabilités
+        total_pheromones = sum([(pheromone ** self.alpha) * (heuristic ** self.beta) for pheromone, heuristic in zip(pheromone_values, heuristic_values)])
+
+        probabilities = []
+        for customer, pheromone, heuristic in zip(index_customer, pheromone_values, heuristic_values):
+            if total_pheromones > 0:
+                probability = (pheromone ** self.alpha) * (heuristic ** self.beta) / total_pheromones
+            else:
+                probability = 0
+            probabilities.append((customer, probability))
+
+        return probabilities
+
+    def select_next_node(self, probabilities):
+        if not probabilities:
+            return 'depot'
+        customers, probs = zip(*probabilities)
+        selected_customer = random.choices(customers, weights=probs, k=1)[0]
+        return f'customer_{selected_customer}'
+
+    def calculate_tour_cost(self):
+        total_cost = 0
+        for i in range(len(self.tour) - 1):
+            node_i = self.tour[i]
+            node_j = self.tour[i + 1]
+            if self.graph.has_edge(node_i, node_j):
+                distance = self.graph[node_i][node_j]['weight']
+                total_cost += distance
+            else:
+                # Si l'arête n'existe pas, attribuer une distance très élevée
+                total_cost += 1e6
+        return total_cost
+    
+class Ant_Colony_Optimization:
+    def __init__(self, file_path, ):
+        self.num_customers, self.vehicle_capacity, depot, self.customer_data = read_VRP_input_file(file_path)
+        self.graph = create_graph(self.num_customers, depot, self.customer_data)
+        self.pheromone_matrix = self.initialize_pheromones()
+
+    def initialize_pheromones(self):
+        pheromones = {}
+        nodes = list(self.graph.nodes)
+        for i in range(len(nodes)):
+            for j in range(i + 1, len(nodes)):
+                pheromones[(nodes[i], nodes[j])] = 1.0
+                pheromones[(nodes[j], nodes[i])] = 1.0  # Pour arêtes bidirectionnelles
+        return pheromones
+
+    def update_pheromones(self, ants):
+        # Évaporation des phéromones
+        for edge in self.pheromone_matrix:
+            self.pheromone_matrix[edge] *= (1 - self.evaporation_rate)
+
+        # Dépôt de nouvelles phéromones
+        for ant in ants:
+            cost = ant.calculate_tour_cost()
+            if cost == 0:
+                continue  # Éviter la division par zéro
+            pheromone_deposit = self.Q / cost
+            for i in range(len(ant.tour) - 1):
+                edge = (ant.tour[i], ant.tour[i + 1])
+                if edge in self.pheromone_matrix:
+                    self.pheromone_matrix[edge] += pheromone_deposit
+                # Pour une arête bidirectionnelle
+                reverse_edge = (ant.tour[i + 1], ant.tour[i])
+                if reverse_edge in self.pheromone_matrix:
+                    self.pheromone_matrix[reverse_edge] += pheromone_deposit
+
+    def run(self, num_iterations=100, num_ants=100, alpha=1, beta=3, evaporation_rate=0.2, Q=70):
+        self.num_ants = num_ants
+        self.alpha = alpha
+        self.beta = beta
+        self.evaporation_rate = evaporation_rate
+        self.Q = Q  # Constante de dépôt de phéromones
+
+        best_cost = float('inf')
+        best_solution = []
+
+        for _ in range(num_iterations):
+            ants = [Ant(self.graph, self.pheromone_matrix, self.alpha, self.beta, self.vehicle_capacity, self.evaporation_rate, self.Q) for _ in range(self.num_ants)]
+            for ant in ants:
+                remaining_customers = set(cust[0] for cust in self.customer_data if cust[0] != 1)  # Exclure le dépôt
+                ant.ant_tour(remaining_customers)
+
+            self.update_pheromones(ants)
+
+            for ant in ants:
+                cost = ant.calculate_tour_cost()
+                if cost < best_cost:
+                    best_cost = cost
+                    best_solution = ant.tour
+
+        return best_solution, best_cost

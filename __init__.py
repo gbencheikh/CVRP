@@ -108,6 +108,21 @@ def test_Partical_Swarm_Optimization():
 
     print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
 
+def test_Ant_Colony_Optimization():
+    ''' ---------- Ant Colony Opitmization ---------- '''
+    ACO = Ant_Colony_Optimization('INSTANCES_random\\C-n5-k2.vrp')
+
+    # Résoudre le VRP en utilisant ACO 
+    start_time = time.time()
+    meilleure_solution, meilleure_distance = ACO.run(num_iterations=100, num_ants=100, alpha=1, beta=3, evaporation_rate=0.2, Q=70)
+    end_time = time.time()
+
+    print(f" Ant Colony Opitmization terminée.") 
+
+    afficher_solution(meilleure_solution, meilleure_distance)
+
+    print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
+
 def main():
     test_Hill_Climbing()
     test_Tabu_Search()
@@ -115,6 +130,7 @@ def main():
     test_Golden_Ball_Algorithm()
     test_Genetic_Algorithm()
     test_Partical_Swarm_Optimization()
-    
+    test_Ant_Colony_Optimization()
+
 if __name__ == "__main__":
     main()
