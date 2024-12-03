@@ -3,6 +3,7 @@ import random
 from typing import Dict, List, Optional
 import networkx as nx
 import matplotlib.pyplot as plt
+from params import *
 
 def read_VRP_input_file(file_path):
     with open(file_path, 'r') as file:
@@ -189,6 +190,15 @@ def generate_neighbor(solution, demands, capacity):
 
 def evaluer_solution(solution, NODE_COORD_SECTION):
     return distance_totale(solution, NODE_COORD_SECTION)
+
+def verifier_capacite(solution, demandes):
+    capacites = [0] * len(demandes)
+    for ville, vehicule in solution:
+        demande = next((demande for id_ville, demande in demandes if id_ville == ville), 0)
+        capacites[vehicule] += demande
+        if capacites[vehicule] > capacite_vehicule:
+            return False
+    return True
 
 # Displaying the routes and total cost
 def afficher_solution(solution, distance):
