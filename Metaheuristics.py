@@ -207,3 +207,119 @@ class Golden_Ball_Algorithm:
                         self.best_distance = total_distance
         
         return self.best_solution, self.best_distance
+    
+class Genetic_Algorithm:
+    def __init__(self, file_path):
+        # Load the data
+        self.NODE_COORD_SECTION, self.demandes = read_file(file_path)
+        self.nb_villes = len(self.NODE_COORD_SECTION)
+        # Generate initial solution
+        self.meilleure_solution = generate_solution(self.nb_villes, nb_vehicules, capacite_vehicule, self.demandes)
+
+    # Générer une population initiale
+    def generer_population(self, taille_population):
+        population = []
+        for _ in range(taille_population):
+            ok = False
+            while ok == False:
+                sol = generate_solution(self.nb_villes, nb_vehicules, capacite_vehicule, self.demandes)
+                if verifier_capacite(sol, self.demandes):
+                    population.append(sol)
+                    ok = True
+                else:
+                    print("Solution initiale invalide. Génération d'une nouvelle solution.")
+
+        return population
+    
+    # Sélection par tournoi
+    def selection(self, population, scores, k=3):
+        selection_ix = random.randint(0, len(population) - 1)
+        for ix in random.sample(range(len(population)), k - 1):
+            if scores[ix] < scores[selection_ix]:
+                selection_ix = ix
+        return population[selection_ix]
+    
+    # Crossover: Crossover d'ordre (OX)
+    def crossover(self, parent1, parent2):
+        # Parent solutions are lists of routes
+        p1 = [ville for route in parent1 for ville in route]
+        p2 = [ville for route in parent2 for ville in route]
+
+        size = len(p1)
+        a, b = sorted(random.sample(range(size), 2))
+        child_p = [None] * size
+        child_p[a:b] = p1[a:b]
+
+        ptr = b
+        for city in p2[b:] + p2[:b]:
+            if city not in child_p:
+                if ptr >= size:
+                    ptr = 0
+                child_p[ptr] = city
+                ptr += 1
+
+        # Reconstruct the child solution into routes
+        child = [[] for _ in range(nb_vehicules)]
+        capacites = [0] * nb_vehicules
+        for ville in child_p:
+            demande = next((d for id_ville, d in self.demandes if id_ville == ville), None)
+            if demande is None:
+                continue
+
+            # Try to assign the city to the same vehicle as in parent1 if possible
+            assigned = False
+            for vehicule in range(nb_vehicules):
+                if capacites[vehicule] + demande <= capacite_vehicule:
+                    child[vehicule].append(ville)
+                    capacites[vehicule] += demande
+                    assigned = True
+                    break
+
+            if not assigned:
+                # If no valid vehicle, distribute to the first that fits
+                for vehicule in range(nb_vehicules):
+                    if capacites[vehicule] + demande <= capacite_vehicule:
+                        child[vehicule].append(ville)
+                        capacites[vehicule] += demande
+                        break
+
+        return child
+
+    # Mutation: Mutation par échange
+    def mutation(self, solution, mutation_rate=0.1):
+        for i in range(len(solution)):
+            if random.random() < mutation_rate:
+                j = random.randint(0, len(solution) - 1)
+                solution[i], solution[j] = solution[j], solution[i]
+        if not verifier_capacite(solution, self.demandes):
+            print("Capacité violée après mutation. Réparation de la solution.")
+            # Correction de la violation de capacité sans régénérer la solution entière
+            solution = generate_solution(self.nb_villes, nb_vehicules, capacite_vehicule, self.demandes)
+        return solution
+    
+    def run(self, taille_population, generations, mutation_rate):
+        population = self.generer_population(taille_population)
+        self.best_solution = None
+        self.best_score = float('inf')
+
+        for _ in range(generations):
+            scores = [evaluer_solution(individual, self.NODE_COORD_SECTION) for individual in population]
+
+            for i in range(taille_population):
+                if scores[i] < self.best_score:
+                    self.best_solution = population[i]
+                    self.best_score = scores[i]
+
+            # Sélectionner les parents
+            new_population = []
+            for _ in range(taille_population // 2):
+                parent1 = self.selection(population, scores)
+                parent2 = self.selection(population, scores)
+                child1 = self.crossover(parent1, parent2)
+                child2 = self.crossover(parent2, parent1)
+                new_population.append(self.mutation(child1, mutation_rate))
+                new_population.append(self.mutation(child2, mutation_rate))
+            
+            population = new_population
+
+        return self.best_solution, self.best_score

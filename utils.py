@@ -192,12 +192,14 @@ def evaluer_solution(solution, NODE_COORD_SECTION):
     return distance_totale(solution, NODE_COORD_SECTION)
 
 def verifier_capacite(solution, demandes):
-    capacites = [0] * len(demandes)
-    for ville, vehicule in solution:
-        demande = next((demande for id_ville, demande in demandes if id_ville == ville), 0)
-        capacites[vehicule] += demande
-        if capacites[vehicule] > capacite_vehicule:
-            return False
+    capacites = [0] * len(solution)
+    for vehicule, route in enumerate(solution):
+        for ville in route:
+            demande = next((demande for id_ville, demande in demandes if id_ville == ville), 0)
+            capacites[vehicule] += demande
+            
+            if capacites[vehicule] > capacite_vehicule:
+                return False  # Dépassement de capacité pour ce véhicule
     return True
 
 # Displaying the routes and total cost

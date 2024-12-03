@@ -68,11 +68,31 @@ def test_Golden_Ball_Algorithm():
 
     print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
 
+def test_Genetic_Algorithm():
+    ''' ---------- Genetic Algorithm ---------- '''
+    start_time = time.perf_counter()
+
+    GA = Genetic_Algorithm('INSTANCES_random\\C-n5-k2.vrp')
+    taille_population = 150
+    generations = 500
+    mutation_rate = 0.1
+    
+    meilleure_solution, meilleure_distance = GA.run(taille_population, generations, mutation_rate) 
+
+    end_time = time.perf_counter()
+    
+    print(f"Genetic Algorithm terminée.") 
+    # Display the final solution
+    afficher_solution(meilleure_solution, meilleure_distance)
+
+    print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
+
 def main():
     test_Hill_Climbing()
     test_Tabu_Search()
     test_Simulated_Annealing()
     test_Golden_Ball_Algorithm()
+    test_Genetic_Algorithm()
 
 if __name__ == "__main__":
     main()
