@@ -158,6 +158,35 @@ def generer_voisins(solution):
                 voisins.append(voisin)
     return voisins
 
+def generate_neighbor(solution, demands, capacity):
+    # Function to generate a neighbor solution by swapping two nodes in a solution
+    new_solution = [route[:] for route in solution]  # Deep copy of current solution
+    
+    # Check if there are at least two routes to swap between
+    if len(new_solution) < 2:
+        return solution  # Return the original solution if there are fewer than two routes
+
+    # Select two random routes and swap a node between them if feasible
+    route1, route2 = random.sample(range(len(new_solution)), 2)
+    if new_solution[route1] and new_solution[route2]:
+        node1 = random.choice(new_solution[route1])
+        node2 = random.choice(new_solution[route2])
+        
+        # Extract demands for the selected nodes
+        demand_node1 = next(demande for ville, demande in demands if ville == node1)
+        demand_node2 = next(demande for ville, demande in demands if ville == node2)
+        
+        # Check if swapping maintains capacity constraints
+        load_route1 = sum(next(demande for ville, demande in demands if ville == node) for node in new_solution[route1]) - demand_node1 + demand_node2
+        load_route2 = sum(next(demande for ville, demande in demands if ville == node) for node in new_solution[route2]) - demand_node2 + demand_node1
+                
+        if load_route1 <= capacity and load_route2 <= capacity:
+            # Perform swap
+            idx1, idx2 = new_solution[route1].index(node1), new_solution[route2].index(node2)
+            new_solution[route1][idx1], new_solution[route2][idx2] = node2, node1
+    
+    return new_solution
+
 def evaluer_solution(solution, NODE_COORD_SECTION):
     return distance_totale(solution, NODE_COORD_SECTION)
 
