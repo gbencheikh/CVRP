@@ -49,10 +49,30 @@ def test_Simulated_Annealing():
 
     print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
 
+def test_Golden_Ball_Algorithm():
+    ''' ---------- Golden Ball Algorithm ---------- '''
+    start_time = time.perf_counter()
+
+    GBA = Golden_Ball_Algorithm('INSTANCES_random\\C-n5-k2.vrp')
+    num_generations = 100
+    population_size = 33
+    num_teams = 3 
+    
+    meilleure_solution, meilleure_distance = GBA.run(population_size, num_teams, num_generations) 
+
+    end_time = time.perf_counter()
+    
+    print(f"Golden Ball Algorithm terminée.") 
+    # Display the final solution
+    afficher_solution(meilleure_solution, meilleure_distance)
+
+    print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
+
 def main():
     test_Hill_Climbing()
     test_Tabu_Search()
     test_Simulated_Annealing()
+    test_Golden_Ball_Algorithm()
 
 if __name__ == "__main__":
     main()
