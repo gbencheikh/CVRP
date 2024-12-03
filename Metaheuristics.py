@@ -76,3 +76,49 @@ class Tabu_Search:
                 tabu_list.pop(0)
                     
         return self.best_solution, self.best_cost
+
+class Simulated_Annealing:
+    def __init__(self, file_path):
+        # Load the data
+        self.NODE_COORD_SECTION, self.demandes = read_file(file_path)
+        self.nb_villes = len(self.NODE_COORD_SECTION)
+        # Generate initial solution
+        self.best_solution = generate_solution(self.nb_villes, nb_vehicules, capacite_vehicule, self.demandes)
+
+    def run(self, initial_temperature, cooling_rate, minimal_temperature, max_iter):
+        if self.best_solution is None:
+            raise ValueError("Failed to initialize a valid solution.")
+        
+        # Calculate the distance of the initial solution
+        self.best_distance = evaluer_solution(self.best_solution, self.NODE_COORD_SECTION)
+        current_solution = self.best_solution
+        current_distance = self.best_distance
+        
+        # Define initial temperature and cooling parameters
+        temperature = initial_temperature
+        
+        # Step 4: Simulated Annealing loop
+        start_time = time.process_time()  # Start time tracking
+        while temperature > minimal_temperature:
+            for _ in range(max_iter):
+                # Generate a neighbor solution by swapping two random nodes in random routes
+                new_solution = generate_neighbor(current_solution, self.demandes, capacite_vehicule)
+                new_distance = evaluer_solution(new_solution, self.NODE_COORD_SECTION)
+                
+                # Calculate the change in distance
+                delta_distance = new_distance - current_distance
+                
+                # Acceptance criteria: if new solution is better or by probability
+                if delta_distance < 0 or np.exp(-delta_distance / temperature) > random.random():
+                    current_solution = new_solution
+                    current_distance = new_distance
+                    
+                    # Update the best solution if the new solution is better
+                    if current_distance < self.best_distance:
+                        self.best_solution = current_solution
+                        self.best_distance = current_distance
+            
+            # Cool down the temperature
+            temperature *= cooling_rate
+         
+        return self.best_solution, self.best_distance
