@@ -1,0 +1,18 @@
+NAME : H-n5-k2
+CAPACITY : 496
+NODE_COORD_SECTION
+1   217   311
+2   341   91
+3   176   85
+4   225   115
+5   51   281
+DEMAND_SECTION
+1   0
+2   89
+3   70
+4   33
+5   82
+DEPOT_SECTION
+    1
+    -1
+EOF

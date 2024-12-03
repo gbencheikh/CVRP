@@ -1,0 +1,18 @@
+NAME : A-n5-k2
+CAPACITY : 85
+NODE_COORD_SECTION
+1   107   87
+2   187   369
+3   334   133
+4   109   323
+5   142   200
+DEMAND_SECTION
+1   0
+2   74
+3   31
+4   21
+5   23
+DEPOT_SECTION
+    1
+    -1
+EOF

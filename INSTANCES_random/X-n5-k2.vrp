@@ -1,0 +1,18 @@
+NAME : X-n5-k2
+CAPACITY : 200	
+NODE_COORD_SECTION			
+1   344   97
+2   29   155
+3   78   50
+4   60   40
+5   102   36
+DEMAND_SECTION		
+1   0
+2   33
+3   16
+4   40
+5   25		
+DEPOT_SECTION		
+	1	
+	-1	
+EOF

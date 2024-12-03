@@ -1,0 +1,18 @@
+NAME : C-n5-k2
+CAPACITY : 393
+NODE_COORD_SECTION
+1   433   384
+2   133   73
+3   471   227
+4   399   315
+5   235   446
+DEMAND_SECTION
+1   0
+2   70
+3   80
+4   31
+5   5
+DEPOT_SECTION
+    1
+    -1
+EOF
