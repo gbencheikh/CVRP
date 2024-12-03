@@ -87,12 +87,34 @@ def test_Genetic_Algorithm():
 
     print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
 
+def test_Partical_Swarm_Optimization():
+    ''' ---------- Partical Swarm Opitmization ---------- '''
+    start_time = time.perf_counter()
+
+    PSO = Partical_Swarm_Optimization('INSTANCES_random\\C-n5-k2.vrp')
+    num_particles =  50       
+    num_iterations = 200       
+    inertia_weight = 0.4        
+    cognitive_weight = 1.5      
+    social_weight = 1.7
+    
+    meilleure_solution, meilleure_distance = PSO.run(num_particles, num_iterations, inertia_weight, cognitive_weight, social_weight) 
+
+    end_time = time.perf_counter()
+    
+    print(f"Partical Swarm Opitmization terminée.") 
+    # Display the final solution
+    afficher_solution(meilleure_solution, meilleure_distance)
+
+    print(f"Temps total d'exécution: {end_time - start_time:.4f} secondes.")
+
 def main():
     test_Hill_Climbing()
     test_Tabu_Search()
     test_Simulated_Annealing()
     test_Golden_Ball_Algorithm()
     test_Genetic_Algorithm()
-
+    test_Partical_Swarm_Optimization()
+    
 if __name__ == "__main__":
     main()

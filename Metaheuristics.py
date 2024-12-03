@@ -323,3 +323,97 @@ class Genetic_Algorithm:
             population = new_population
 
         return self.best_solution, self.best_score
+    
+class Particle:
+        def __init__(self, num_customers, num_vehicles, capacity, distance_matrix, demands):
+            self.position = np.random.permutation(num_customers)  # Initialize as permutation
+            self.best_position = np.copy(self.position)
+            self.velocity = np.zeros(num_customers)  
+            self.best_cost = float('inf')
+            self.cost = float('inf')
+            self.num_vehicles = num_vehicles
+            self.capacity = capacity
+            self.distance_matrix = distance_matrix
+            self.demands = demands
+
+        def decode(self):
+            routes = [[] for _ in range(self.num_vehicles)]
+            vehicle_index = 0
+            load = 0
+            for customer in self.position:
+                demand = next((d for id_ville, d in self.demands if id_ville == customer), 0)
+                if load + demand > self.capacity:
+                    vehicle_index += 1
+                    load = 0
+                    if vehicle_index >= self.num_vehicles:
+                        break  # Plus de véhicules disponibles
+                routes[vehicle_index].append(customer)
+                load += demand
+
+            return routes 
+            
+        # Methode pour évaluer le cout d'une solution (un ensemble de routes)
+        def evaluate_cost(self, NODE_COORD_SECTION):
+            routes = self.decode()
+
+            self.cost = evaluer_solution(routes, NODE_COORD_SECTION)
+            
+            # Mettre à jour le meilleur personnel
+            if self.cost < self.best_cost:
+                self.best_cost = self.cost
+                self.best_position = np.copy(self.position)
+
+class Partical_Swarm_Optimization:
+    def __init__(self, file_path):
+        # Load the data
+        self.NODE_COORD_SECTION, self.demandes = read_file(file_path)
+        self.num_customers = len(self.NODE_COORD_SECTION)
+
+    def display_routes(self, position):
+        routes = [[] for _ in range(self.num_vehicles)]
+        vehicle_index = 0
+        load = 0
+        
+        for customer in position:
+            demand = next((d for id_ville, d in self.demands if id_ville == customer), 0)
+            if load + demand > self.capacity:
+                vehicle_index += 1
+                load = 0
+                if vehicle_index >= self.num_vehicles:
+                    break  # Plus de véhicules disponibles
+            routes[vehicle_index].append(customer)
+            load += demand
+        
+        return routes
+
+    def run(self, num_particles, num_iterations, inertia_weight, cognitive_weight, social_weight):
+        self.num_particles = num_particles
+        self.num_iterations = num_iterations
+        self.num_vehicles = nb_vehicules
+        self.capacity = capacite_vehicule
+        self.distance_matrix = self.NODE_COORD_SECTION
+        self.demands = self.demandes
+        self.particles = [Particle(self.num_customers, self.num_vehicles, self.capacity, self.distance_matrix, self.demands) for _ in range(self.num_particles)]
+        self.global_best_position = None
+        self.global_best_cost = float('inf')
+
+        for _ in range(self.num_iterations):
+            for particle in self.particles:
+                particle.evaluate_cost(self.NODE_COORD_SECTION)
+                if particle.cost < self.global_best_cost:
+                    self.global_best_cost = particle.cost
+                    self.global_best_position = np.copy(particle.position)
+
+            for particle in self.particles:
+                # Mettre à jour la vitesse en fonction de la dynamique du PSO
+                inertia = inertia_weight * particle.velocity
+                cognitive_component = cognitive_weight * random.random() * (particle.best_position - particle.position)
+                social_component = social_weight * random.random() * (self.global_best_position - particle.position)
+                particle.velocity = inertia + cognitive_component + social_component
+                
+                # Au lieu de mettre à jour directement les positions, les gérer comme des permutations
+                new_position = particle.position + particle.velocity
+                new_position = np.clip(new_position, 0, self.num_customers - 1)
+                particle.position = np.argsort(new_position)  # Trier comme une permutation
+        
+        return self.display_routes(self.global_best_position), self.global_best_cost
